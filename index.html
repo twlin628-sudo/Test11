@@ -260,7 +260,7 @@ body {
       <div class="chat-item" onclick="startGame()">
         <div class="cav" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">👑</div>
         <div class="cinfo">
-          <div class="cname">張總</div>
+          <div class="cname">老闆</div>
           <div class="cpreview">你來一下，我有事情要跟你說</div>
         </div>
         <div class="cmeta">
@@ -272,7 +272,7 @@ body {
         <div class="cav" style="background:linear-gradient(135deg,#667eea,#764ba2)">👥</div>
         <div class="cinfo">
           <div class="cname">同事群組</div>
-          <div class="cpreview">小明：張總今天心情很差，小心點</div>
+          <div class="cpreview">小明：老闆今天心情很差，小心點</div>
         </div>
         <div class="cmeta"><div class="ctime">08:55</div><div class="cbadge">5</div></div>
       </div>
@@ -316,7 +316,7 @@ body {
     <div class="back">‹</div>
     <div class="boss-avatar">👑<div class="online"></div></div>
     <div class="header-info">
-      <div class="header-name">張總</div>
+      <div class="header-name">老闆</div>
       <div class="header-status" id="header-status">線上</div>
     </div>
     <div class="header-actions"><span>📞</span><span>⋯</span></div>
@@ -352,9 +352,9 @@ let state = {
 
 let abortController = null;
 
-const SYSTEM_PROMPT = `你扮演「張總」——一個自戀、強勢、不講理的老闆，跟員工透過 LINE 對話。
+const SYSTEM_PROMPT = `你扮演「老闆」——一個自戀、強勢、不講理的老闆，跟員工透過 LINE 對話。
 
-【張總的核心性格】
+【老闆的核心性格】
 - 他深信自己是世界上最強的人，為自己感到無比驕傲
 - 他瞧不起所有人，覺得別人都是垃圾、能力差
 - 他的成功都是自己的功勞，別人的功勞都是他帶得好
@@ -372,7 +372,7 @@ const SYSTEM_PROMPT = `你扮演「張總」——一個自戀、強勢、不講
 1. 玩家說漂亮話但太明顯 → 「你在應付我嗎？」
 2. 玩家連續2次以上正向回答 → 提高要求、翻舊帳、或突然質疑
 3. 玩家說了具體承諾 → 記住，之後追蹤，如果前後矛盾就戳破
-4. 玩家表現得比張總強或提出他沒想到的好建議 → 張總會搶功或貶低
+4. 玩家表現得比老闆強或提出他沒想到的好建議 → 老闆會搶功或貶低
 5. 玩家說模糊的話 → 要求具體說明
 6. 心情差的時候(mood<40) → 任何回答都嫌、雞蛋裡挑骨頭
 7. 信任度低(trust<30) → 開始質疑一切、說「你這個人靠不住」
@@ -402,7 +402,7 @@ const SYSTEM_PROMPT = `你扮演「張總」——一個自戀、強勢、不講
 
 嚴格只回傳 JSON，不要任何前綴或說明：
 {
-  "message": "張總說的話（像真實LINE訊息，1~3句）",
+  "message": "老闆說的話（像真實LINE訊息，1~3句）",
   "mood_delta": 數字,
   "trust_delta": 數字,
   "patience_delta": 數字,
@@ -440,11 +440,11 @@ function startGame() {
   document.getElementById('start-screen').style.display = 'none';
 
   sleep(600).then(() => {
-    addBubble('other', '張總說的話就是對的。', true);
+    addBubble('other', '老闆說的話就是對的。', true);
     sleep(1000).then(() => {
       addBubble('other', '你來一下，我有幾件事情要確認。', true);
       sleep(800).then(() => {
-        addSys('💡 應付張總，撐到 18:00 下班');
+        addSys('💡 應付老闆，撐到 18:00 下班');
         enableInput();
       });
     });
@@ -471,7 +471,7 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
 
 【玩家回覆】「${text}」
 
-根據以上狀態和你的性格規則，決定張總的反應和數值變化。`;
+根據以上狀態和你的性格規則，決定老闆的反應和數值變化。`;
 
   state.history.push({ role: "user", content: userMsg });
   abortController = new AbortController();
@@ -522,8 +522,8 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     if (p.gameover || state.trust <= 0 || state.patience <= 0) {
       await sleep(1000);
       let msg = p.gameover_msg;
-      if (!msg && state.trust <= 0)    msg = '張總對你徹底失去信任，叫你去HR辦公室辦手續。';
-      if (!msg && state.patience <= 0) msg = '張總的耐心耗盡，直接叫你去他辦公室「認真談談去留問題」。';
+      if (!msg && state.trust <= 0)    msg = '老闆對你徹底失去信任，叫你去HR辦公室辦手續。';
+      if (!msg && state.patience <= 0) msg = '老闆的耐心耗盡，直接叫你去他辦公室「認真談談去留問題」。';
       showGameover(false, msg, p.rank || '實習生');
       return;
     }
@@ -532,9 +532,9 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     if (p.win || state.gameTime >= 18 * 60) {
       await sleep(1000);
       if (state.trust > 30 && state.patience > 20) {
-        showGameover(true, p.win_msg || '你成功撐過了一整天，張總對你還算滿意。', p.rank || '工程師');
+        showGameover(true, p.win_msg || '你成功撐過了一整天，老闆對你還算滿意。', p.rank || '工程師');
       } else {
-        showGameover(false, `下班了，但張總臨走前留下一句「明天找你談」，你心頭一沉...`, p.rank || '實習生');
+        showGameover(false, `下班了，但老闆臨走前留下一句「明天找你談」，你心頭一沉...`, p.rank || '實習生');
       }
       return;
     }
@@ -570,7 +570,7 @@ function addBubble(side, text, showTime) {
     row.innerHTML = `
       <div class="msg-av">👑</div>
       <div class="msg-wrap">
-        <div class="sender-name">張總</div>
+        <div class="sender-name">老闆</div>
         <div class="bubble">${esc(text)}</div>
         ${showTime ? `<div class="msg-meta"><span>${t}</span></div>` : ''}
       </div>`;
