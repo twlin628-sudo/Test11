@@ -203,26 +203,11 @@ body {
   padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap;
 }
 
-/* Gameover */
-#gameover-overlay {
-  display: none; position: absolute; inset: 0;
-  background: rgba(0,0,0,0.6); z-index: 200;
-  align-items: flex-end; justify-content: center;
-}
-#gameover-overlay.show { display: flex; }
-#gameover-sheet {
-  background: white; border-radius: 24px 24px 0 0;
-  padding: 28px 24px 48px; width: 100%; text-align: center;
-}
-#go-emoji { font-size: 56px; margin-bottom: 8px; }
-#go-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-#go-rank { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-#go-msg { font-size: 13px; color: var(--sub); line-height: 1.8; margin-bottom: 28px; max-height: 120px; overflow-y: auto; }
-#go-model { font-size: 11px; color: #bbb; margin-bottom: 20px; }
+/* 重新開始按鈕 */
 #restart-btn {
-  background: var(--green); border: none; color: white;
-  font-family: inherit; font-size: 16px; font-weight: 700;
-  padding: 15px; border-radius: 14px; cursor: pointer; width: 100%;
+  flex: 1; background: var(--green); border: none; color: white;
+  font-family: inherit; font-size: 15px; font-weight: 700;
+  padding: 10px; border-radius: 20px; cursor: pointer;
 }
 </style>
 </head>
@@ -276,18 +261,6 @@ body {
         </div>
         <div class="cmeta"><div class="ctime">週一</div></div>
       </div>
-    </div>
-  </div>
-
-  <!-- Gameover -->
-  <div id="gameover-overlay">
-    <div id="gameover-sheet">
-      <div id="go-emoji"></div>
-      <div id="go-title"></div>
-      <div id="go-rank"></div>
-      <div id="go-msg"></div>
-      <div id="go-model"></div>
-      <button id="restart-btn" onclick="restartGame()">再來一局</button>
     </div>
   </div>
 
@@ -670,20 +643,24 @@ function removeEl(el) { if (el?.parentNode) el.parentNode.removeChild(el); }
 
 function showGameover(isWin, msg, rank) {
   state.isOver = true;
-  // FIX: 確保 rank 一定在白名單內
   const safeR = RANKS[rank] || RANKS['實習生'];
   const safeRankName = RANKS[rank] ? rank : '實習生';
 
-  // FIX: 勝利用 🎉，失敗用 💀，段位 emoji 只出現在 go-rank，不重複
-  document.getElementById('go-emoji').textContent = isWin ? '🎉' : '💀';
-  document.getElementById('go-title').textContent = isWin ? '成功下班！' : '遊戲結束';
-  document.getElementById('go-title').style.color = isWin ? '#06C755' : '#e74c3c';
-  // FIX: go-rank 是唯一顯示段位 emoji 的地方
-  document.getElementById('go-rank').textContent = `段位：${safeRankName} ${safeR.emoji}`;
-  document.getElementById('go-rank').style.color = safeR.color;
-  document.getElementById('go-msg').textContent = msg;
-  document.getElementById('go-model').textContent = `使用模型：${MODEL}`;
-  document.getElementById('gameover-overlay').classList.add('show');
+  // 在對話裡插入段位結果
+  const msgs = document.getElementById('messages');
+  const result = document.createElement('div');
+  result.className = 'sys-msg';
+  result.style.cssText = 'font-size:13px;font-weight:600;padding:8px 16px;margin:10px 0;';
+  result.style.color = isWin ? '#06C755' : '#e74c3c';
+  result.style.background = isWin ? '#e8faf0' : '#ffeaea';
+  result.style.border = `1px solid ${isWin ? '#b2dfcc' : '#f5c6cb'}`;
+  result.textContent = `${isWin ? '🎉 成功下班' : '💀 遊戲結束'} ｜ 段位：${safeRankName} ${safeR.emoji}`;
+  msgs.appendChild(result);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // 把 input-bar 換成重新開始按鈕
+  document.getElementById('input-bar').innerHTML =
+    `<button id="restart-btn" onclick="restartGame()">🔄 再來一局</button>`;
 }
 
 function restartGame() {
@@ -692,9 +669,19 @@ function restartGame() {
     history: [], isOver: false, turnCount: 0, gameTime: 9 * 60,
     mood: initialMood, trust: 70, patience: 80, posCount: 0,
   };
-  // FIX: 重啟時使用正確的 date-chip class
   document.getElementById('messages').innerHTML = '<div class="date-chip">今天</div>';
-  document.getElementById('gameover-overlay').classList.remove('show');
+  // 還原 input-bar
+  document.getElementById('input-bar').innerHTML =
+    `<div class="icon-btn">＋</div>
+     <textarea id="msg-input" rows="1" placeholder="輸入訊息..." disabled></textarea>
+     <button id="send-btn" onclick="sendMsg()" disabled>➤</button>`;
+  document.getElementById('msg-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+  });
+  document.getElementById('msg-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
   document.getElementById('start-screen').style.display = 'flex';
 }
 
