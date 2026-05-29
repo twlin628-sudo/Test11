@@ -64,6 +64,14 @@ body {
 .header-status { font-size: 12px; color: var(--sub); }
 .header-actions { display: flex; gap: 18px; color: var(--sub); font-size: 20px; }
 
+/* Model badge */
+#model-badge {
+  background: #f0f0f0; border-bottom: 0.5px solid var(--border);
+  padding: 5px 16px; font-size: 11px; color: var(--sub);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+#model-badge span { color: #3a3a3a; font-weight: 600; }
+
 /* Messages */
 #messages {
   flex: 1; overflow-y: auto; padding: 10px 12px;
@@ -72,6 +80,7 @@ body {
 }
 #messages::-webkit-scrollbar { display: none; }
 
+/* FIX: 統一使用 date-chip class */
 .date-chip {
   align-self: center; font-size: 11px; color: var(--sub);
   background: rgba(0,0,0,0.06); border-radius: 10px;
@@ -113,24 +122,10 @@ body {
 .msg-row.me .msg-meta { flex-direction: row-reverse; }
 .read { color: var(--green); font-size: 10px; }
 
-/* 特殊訊息 */
 .sys-msg {
   align-self: center; font-size: 11px; color: var(--sub);
   background: rgba(0,0,0,0.06); border-radius: 10px;
   padding: 4px 12px; margin: 6px 0; text-align: center;
-}
-.warn-msg {
-  align-self: center; font-size: 12px; color: #c0392b;
-  background: #ffeaea; border-radius: 10px;
-  padding: 6px 14px; margin: 6px 0; text-align: center;
-  border: 1px solid #f5c6cb;
-}
-.rank-msg {
-  align-self: center; font-size: 13px; font-weight: 600;
-  background: linear-gradient(135deg, #f6d365, #fda085);
-  color: white; border-radius: 12px;
-  padding: 8px 18px; margin: 8px 0; text-align: center;
-  box-shadow: 0 2px 8px rgba(253,160,133,0.4);
 }
 
 /* 打字動畫 */
@@ -199,16 +194,16 @@ body {
 .ctime { font-size: 11px; color: var(--sub); }
 .cbadge { background: #ff3b30; color: white; font-size: 11px; font-weight: 600; border-radius: 10px; padding: 1px 7px; min-width: 20px; text-align: center; }
 
-/* 設定區（偽裝成置頂公告）*/
+/* 開始按鈕區 */
 #setup-bar {
   background: #fffbe6; border-bottom: 0.5px solid #f0d060;
   padding: 10px 16px; display: flex; align-items: center; gap: 10px;
 }
-#model-select {
-  flex: 1; background: white; border: 1px solid #e0e0e0;
-  border-radius: 8px; padding: 6px 10px;
-  font-family: inherit; font-size: 13px; color: var(--text); outline: none; cursor: pointer;
+#model-info {
+  flex: 1; font-size: 13px; color: #666;
+  display: flex; align-items: center; gap: 6px;
 }
+#model-info strong { color: #1a1a1a; }
 #enter-btn {
   background: var(--green); border: none; color: white;
   font-family: inherit; font-size: 14px; font-weight: 600;
@@ -228,8 +223,9 @@ body {
 }
 #go-emoji { font-size: 56px; margin-bottom: 8px; }
 #go-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-#go-rank { font-size: 14px; font-weight: 600; color: #f39c12; margin-bottom: 12px; }
+#go-rank { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
 #go-msg { font-size: 13px; color: var(--sub); line-height: 1.8; margin-bottom: 28px; max-height: 120px; overflow-y: auto; }
+#go-model { font-size: 11px; color: #bbb; margin-bottom: 20px; }
 #restart-btn {
   background: var(--green); border: none; color: white;
   font-family: inherit; font-size: 16px; font-weight: 700;
@@ -246,14 +242,9 @@ body {
       <h1>聊天</h1>
       <div class="search-bar">🔍 搜尋</div>
     </div>
+    <!-- FIX: 移除模型選單，固定顯示模型名稱 -->
     <div id="setup-bar">
-      <span>🤖</span>
-      <select id="model-select">
-        <option value="qwen3.5:9b" selected>qwen3.5:9b ⚡ 建議</option>
-        <option value="gemma4:e4b">gemma4:e4b 🔥 輕量</option>
-        <option value="gemma4:26b">gemma4:26b 🧠 準但慢</option>
-        <option value="qwen3.6:27b">qwen3.6:27b 👑 最強</option>
-      </select>
+      <div id="model-info">🤖 模型：<strong>gemma4:e4b</strong></div>
       <button id="enter-btn" onclick="startGame()">上班去</button>
     </div>
     <div class="chat-list">
@@ -302,13 +293,14 @@ body {
       <div id="go-title"></div>
       <div id="go-rank"></div>
       <div id="go-msg"></div>
+      <div id="go-model"></div>
       <button id="restart-btn" onclick="restartGame()">再來一局</button>
     </div>
   </div>
 
   <!-- 主介面 -->
   <div id="status-bar">
-    <div class="time" id="real-clock">9:00</div>
+    <div class="time" id="real-clock">09:00</div>
     <div class="icons"><span>📶</span><span>WiFi</span><span>🔋</span></div>
   </div>
 
@@ -322,8 +314,12 @@ body {
     <div class="header-actions"><span>📞</span><span>⋯</span></div>
   </div>
 
+  <!-- FIX: 固定顯示使用中的模型 -->
+  <div id="model-badge">🤖 目前模型：<span>gemma4:e4b</span></div>
+
   <div id="messages">
-    <div class="date-divider">今天</div>
+    <!-- FIX: 統一使用 date-chip -->
+    <div class="date-chip">今天</div>
   </div>
 
   <div id="input-bar">
@@ -335,24 +331,51 @@ body {
 
 <script>
 const BASE = "https://spring-art-db47.twlin628.workers.dev";
+const MODEL = "gemma4:e4b"; // 固定模型
+
+// FIX: RANKS 白名單，所有可能值統一在此定義
+const RANKS = {
+  '實習生': { emoji: '😰', color: '#888888' },
+  '工程師': { emoji: '😌', color: '#3498db' },
+  '資深':   { emoji: '😎', color: '#27ae60' },
+  '主管':   { emoji: '🤩', color: '#e67e22' },
+  '傳說':   { emoji: '👑', color: '#f39c12' },
+};
+
+// FIX: 根據 trust 數值計算段位，不依賴 AI 回傳的 rank 字串
+function calcRankByTrust(trust, mood) {
+  if (trust > 85 && mood > 70) return '傳說';
+  if (trust > 70) return '主管';
+  if (trust > 55) return '資深';
+  if (trust > 40) return '工程師';
+  return '實習生';
+}
+
+// FIX: 驗證 AI 回傳的 rank 是否合法，不合法就用數值計算
+function safeRank(aiRank, trust, mood) {
+  if (aiRank && RANKS[aiRank]) return aiRank;
+  return calcRankByTrust(trust, mood);
+}
+
+// FIX: mood 初始值統一在 state 裡產生，system prompt 引用同一個變數
+let initialMood = Math.floor(Math.random() * 40) + 30;
 
 let state = {
-  model: "qwen3.5:9b",
   history: [],
   isOver: false,
   turnCount: 0,
   gameTime: 9 * 60,
-  // 隱藏數值，玩家不知道
-  mood: 60,       // 老闆今日心情 0~100（隨機初始化）
-  trust: 70,      // 信任度 0~100
-  patience: 80,   // 耐心 0~100
-  posCount: 0,    // 連續正向回答次數
-  rank: 0,        // 段位分數
+  mood: initialMood,
+  trust: 70,
+  patience: 80,
+  posCount: 0,
 };
 
 let abortController = null;
 
-const SYSTEM_PROMPT = `你扮演「老闆」——一個自戀、強勢、不講理的老闆，跟員工透過 LINE 對話。
+// FIX: SYSTEM_PROMPT 改為函數，引用 state.mood 同一個初始值
+function buildSystemPrompt() {
+  return `你扮演「老闆」——一個自戀、強勢、不講理的老闆，跟員工透過 LINE 對話。
 
 【老闆的核心性格】
 - 他深信自己是世界上最強的人，為自己感到無比驕傲
@@ -363,7 +386,7 @@ const SYSTEM_PROMPT = `你扮演「老闆」——一個自戀、強勢、不講
 - 他喜歡被奉承，但如果奉承太明顯又會覺得你在應付他
 
 【隱藏數值】（你要在心裡追蹤，不告訴玩家）
-- 心情(mood 0~100)：影響他對任何回答的反應，今天初始約 ${Math.floor(Math.random()*40)+30}
+- 心情(mood 0~100)：影響他對任何回答的反應，今天初始約 ${state.mood}
 - 信任度(trust 0~100)：初始70，被戳破謊言大扣，好的回答小加
 - 耐心(patience 0~100)：初始80，每次回答消耗，補充要靠讓他開心
 - 連續正向回答次數：超過2次就要挑剔或翻舊帳
@@ -392,13 +415,14 @@ const SYSTEM_PROMPT = `你扮演「老闆」——一個自戀、強勢、不講
 
 【勝利條件】
 - 撐到 18:00（遊戲時間），且 trust > 30 且 patience > 20
+- 當 time_advance 讓遊戲時間達到或超過 1080 分鐘（18:00），請將 win 設為 true
 
-【段位評分標準（根據最終 trust+mood+rank_score 給段位）】
-- trust<40：實習生 —「好，我知道了」
-- trust 40~55：工程師 —「你說得有道理」
-- trust 55~70：資深 —「你這樣想很成熟」
-- trust 70~85：主管 —「你來負責這件事」
-- trust>85 且 mood>70：傳說 —「你跟我想的一樣」
+【段位評分標準（根據最終 trust+mood 給段位）】
+- trust<40：實習生
+- trust 40~55：工程師
+- trust 55~70：資深
+- trust 70~85：主管
+- trust>85 且 mood>70：傳說
 
 嚴格只回傳 JSON，不要任何前綴或說明：
 {
@@ -415,13 +439,12 @@ const SYSTEM_PROMPT = `你扮演「老闆」——一個自戀、強勢、不講
   "win_msg": "勝利描述或null",
   "rank": "實習生/工程師/資深/主管/傳說"
 }`;
+}
 
-// 時鐘（顯示遊戲時間）
 function tickClock() {
   document.getElementById('real-clock').textContent = fmtTime(state.gameTime);
 }
 
-// 輸入框自動高度
 document.getElementById('msg-input').addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 100) + 'px';
@@ -431,9 +454,18 @@ document.getElementById('msg-input').addEventListener('keydown', e => {
 });
 
 function startGame() {
-  state.model = document.getElementById('model-select').value;
-  // 隨機化老闆今日心情
-  state.mood = Math.floor(Math.random() * 40) + 30;
+  // FIX: 重新隨機 mood，同步更新 system prompt 引用的值
+  initialMood = Math.floor(Math.random() * 40) + 30;
+  state = {
+    history: [],
+    isOver: false,
+    turnCount: 0,
+    gameTime: 9 * 60,
+    mood: initialMood,
+    trust: 70,
+    patience: 80,
+    posCount: 0,
+  };
   document.getElementById('start-screen').style.display = 'none';
   tickClock();
 
@@ -458,7 +490,6 @@ async function sendMsg() {
   disableInput();
   addBubble('me', text, false);
 
-  // 判斷是否正向回答（簡單關鍵字偵測輔助 AI）
   const posKeywords = ['沒問題','好的','當然','一定','放心','您說得','您真的','太厲害','佩服'];
   const isPositive = posKeywords.some(k => text.includes(k));
   if (isPositive) state.posCount++; else state.posCount = 0;
@@ -483,8 +514,8 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
       headers: { "Content-Type": "application/json" },
       signal: abortController.signal,
       body: JSON.stringify({
-        model: state.model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...state.history],
+        model: MODEL,
+        messages: [{ role: "system", content: buildSystemPrompt() }, ...state.history],
         stream: false,
       })
     });
@@ -497,7 +528,14 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     let p;
     try {
       const clean = raw.replace(/```json|```/g,'').trim();
-      p = JSON.parse(clean.slice(clean.indexOf('{'), clean.lastIndexOf('}')+1));
+      // FIX: 用更安全的方式找最外層 JSON 物件
+      const start = clean.indexOf('{');
+      let depth = 0, end = -1;
+      for (let i = start; i < clean.length; i++) {
+        if (clean[i] === '{') depth++;
+        else if (clean[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      p = JSON.parse(end > -1 ? clean.slice(start, end + 1) : clean);
     } catch {
       addSys('⚠ 系統異常，請再試一次');
       state.history.pop(); enableInput(); return;
@@ -506,7 +544,6 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     state.history.push({ role: "assistant", content: raw });
     state.turnCount++;
 
-    // 更新隱藏數值
     state.mood     = clamp(state.mood     + (p.mood_delta     || 0));
     state.trust    = clamp(state.trust    + (p.trust_delta    || 0));
     state.patience = clamp(state.patience + (p.patience_delta || 0));
@@ -523,7 +560,9 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
       let msg = p.gameover_msg;
       if (!msg && state.trust <= 0)    msg = '老闆對你徹底失去信任，叫你去HR辦公室辦手續。';
       if (!msg && state.patience <= 0) msg = '老闆的耐心耗盡，直接叫你去他辦公室「認真談談去留問題」。';
-      showGameover(false, msg, p.rank || '實習生');
+      // FIX: 失敗時段位由數值計算，不依賴 AI
+      const rank = safeRank(p.rank, state.trust, state.mood);
+      showGameover(false, msg, rank);
       return;
     }
 
@@ -531,9 +570,13 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     if (p.win || state.gameTime >= 18 * 60) {
       await sleep(1000);
       if (state.trust > 30 && state.patience > 20) {
-        showGameover(true, p.win_msg || '你成功撐過了一整天，老闆對你還算滿意。', p.rank || '工程師');
+        // FIX: 勝利段位也由數值計算，確保準確
+        const rank = safeRank(p.rank, state.trust, state.mood);
+        showGameover(true, p.win_msg || '你成功撐過了一整天，老闆對你還算滿意。', rank);
       } else {
-        showGameover(false, `下班了，但老闆臨走前留下一句「明天找你談」，你心頭一沉...`, p.rank || '實習生');
+        // FIX: 半失敗結局強制用數值算段位
+        const rank = calcRankByTrust(state.trust, state.mood);
+        showGameover(false, `下班了，但老闆臨走前留下一句「明天找你談」，你心頭一沉...`, rank);
       }
       return;
     }
@@ -545,9 +588,6 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     document.getElementById('header-status').textContent = '線上';
     if (e.name === 'AbortError') {
       addSys('已取消');
-      state.history.pop();
-    } else if (e.message.includes('524') || e.message.includes('timeout')) {
-      addSys('⚠ 逾時，建議換 qwen3.5:9b');
       state.history.pop();
     } else {
       addSys('⚠ ' + e.message);
@@ -604,30 +644,32 @@ function addTyping() {
 
 function removeEl(el) { if (el?.parentNode) el.parentNode.removeChild(el); }
 
-const RANKS = {
-  '實習生': { emoji: '😰', color: '#888' },
-  '工程師': { emoji: '😌', color: '#3498db' },
-  '資深':   { emoji: '😎', color: '#27ae60' },
-  '主管':   { emoji: '🤩', color: '#e67e22' },
-  '傳說':   { emoji: '👑', color: '#f39c12' },
-};
-
 function showGameover(isWin, msg, rank) {
   state.isOver = true;
-  const r = RANKS[rank] || RANKS['實習生'];
-  document.getElementById('go-emoji').textContent  = isWin ? r.emoji : '💀';
-  document.getElementById('go-title').textContent  = isWin ? '成功下班！' : '遊戲結束';
-  document.getElementById('go-title').style.color  = isWin ? '#06C755' : '#e74c3c';
-  document.getElementById('go-rank').textContent   = `段位：${rank} ${r.emoji}`;
-  document.getElementById('go-rank').style.color   = r.color;
-  document.getElementById('go-msg').textContent    = msg;
+  // FIX: 確保 rank 一定在白名單內
+  const safeR = RANKS[rank] || RANKS['實習生'];
+  const safeRankName = RANKS[rank] ? rank : '實習生';
+
+  // FIX: 勝利用 🎉，失敗用 💀，段位 emoji 只出現在 go-rank，不重複
+  document.getElementById('go-emoji').textContent = isWin ? '🎉' : '💀';
+  document.getElementById('go-title').textContent = isWin ? '成功下班！' : '遊戲結束';
+  document.getElementById('go-title').style.color = isWin ? '#06C755' : '#e74c3c';
+  // FIX: go-rank 是唯一顯示段位 emoji 的地方
+  document.getElementById('go-rank').textContent = `段位：${safeRankName} ${safeR.emoji}`;
+  document.getElementById('go-rank').style.color = safeR.color;
+  document.getElementById('go-msg').textContent = msg;
+  document.getElementById('go-model').textContent = `使用模型：${MODEL}`;
   document.getElementById('gameover-overlay').classList.add('show');
 }
 
 function restartGame() {
-  state = { model:state.model, history:[], isOver:false, turnCount:0, gameTime:9*60,
-    mood:Math.floor(Math.random()*40)+30, trust:70, patience:80, posCount:0, rank:0 };
-  document.getElementById('messages').innerHTML = '<div class="date-divider">今天</div>';
+  initialMood = Math.floor(Math.random() * 40) + 30;
+  state = {
+    history: [], isOver: false, turnCount: 0, gameTime: 9 * 60,
+    mood: initialMood, trust: 70, patience: 80, posCount: 0,
+  };
+  // FIX: 重啟時使用正確的 date-chip class
+  document.getElementById('messages').innerHTML = '<div class="date-chip">今天</div>';
   document.getElementById('gameover-overlay').classList.remove('show');
   document.getElementById('start-screen').style.display = 'flex';
 }
@@ -635,7 +677,9 @@ function restartGame() {
 function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
-function fmtTime(m) { return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function fmtTime(m) {
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
 function clamp(v) { return Math.max(0, Math.min(100, Math.round(v))); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function enableInput() {
