@@ -209,6 +209,53 @@ body {
   font-family: inherit; font-size: 15px; font-weight: 700;
   padding: 10px; border-radius: 20px; cursor: pointer;
 }
+
+/* 進階模式輸入畫面 */
+#advanced-screen {
+  position: absolute; inset: 0; background: white; z-index: 101;
+  display: none; flex-direction: column;
+}
+#advanced-screen.show { display: flex; }
+#adv-header {
+  padding: 44px 16px 16px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+#adv-header h1 { font-size: 20px; font-weight: 700; flex: 1; }
+#adv-back { font-size: 24px; color: var(--green); cursor: pointer; }
+#adv-body { flex: 1; padding: 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+.adv-field label { display: block; font-size: 13px; font-weight: 600; color: var(--sub); margin-bottom: 6px; }
+.adv-field input, .adv-field textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 14px; font-size: 14px; font-family: inherit;
+  outline: none; background: #f8f8f8; color: var(--text); resize: none;
+}
+.adv-field input:focus, .adv-field textarea:focus { border-color: var(--green); background: white; }
+.adv-field textarea { min-height: 100px; line-height: 1.5; }
+.adv-hint { font-size: 12px; color: #aaa; margin-top: 5px; }
+#adv-footer { padding: 12px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); border-top: 0.5px solid var(--border); }
+#adv-start-btn {
+  width: 100%; background: var(--green); border: none; color: white;
+  font-family: inherit; font-size: 16px; font-weight: 700;
+  padding: 14px; border-radius: 14px; cursor: pointer;
+}
+#adv-start-btn:disabled { background: #ccc; cursor: default; }
+
+/* 生成中 loading */
+#adv-loading {
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 40px 16px; text-align: center;
+}
+#adv-loading.show { display: flex; }
+#adv-loading .adv-body-wrap { display: flex; flex-direction: column; gap: 20px; }
+#adv-loading.show ~ .adv-body-wrap { display: none; }
+.loading-dots { display: flex; gap: 6px; }
+.loading-dots span {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+  animation: dot 1.2s infinite;
+}
+.loading-dots span:nth-child(2){animation-delay:.2s}
+.loading-dots span:nth-child(3){animation-delay:.4s}
+#adv-loading p { font-size: 14px; color: var(--sub); }
 </style>
 </head>
 <body>
@@ -220,10 +267,11 @@ body {
       <h1>聊天</h1>
       <div class="search-bar">🔍 搜尋</div>
     </div>
-    <!-- FIX: 移除模型選單，固定顯示模型名稱 -->
+    <!-- 模式選擇 -->
     <div id="setup-bar">
       <div id="model-info">🤖 模型：<strong>gemma4:e4b</strong></div>
-      <button id="enter-btn" onclick="startGame()">上班去</button>
+      <button id="enter-btn" onclick="openAdvanced()" style="background:#f0f0f0;color:#333;margin-right:6px;">進階模式</button>
+      <button id="enter-btn" onclick="startGame(null, null)">上班去</button>
     </div>
     <div class="chat-list">
       <div class="chat-item" onclick="startGame()">
@@ -261,6 +309,34 @@ body {
         </div>
         <div class="cmeta"><div class="ctime">週一</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- 進階模式輸入畫面 -->
+  <div id="advanced-screen">
+    <div id="adv-header">
+      <span id="adv-back" onclick="closeAdvanced()">‹</span>
+      <h1>進階模式</h1>
+    </div>
+    <div id="adv-body">
+      <div id="adv-loading">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+        <p id="adv-loading-text">正在分析你的老闆...</p>
+      </div>
+      <div id="adv-fields">
+        <div class="adv-field">
+          <label>你的名字</label>
+          <input type="text" id="adv-name" placeholder="例：小明" maxlength="10" />
+        </div>
+        <div class="adv-field">
+          <label>描述你的老闆個性</label>
+          <textarea id="adv-desc" placeholder="例：很愛面子、講話直接衝、動不動就說當年我創業的時候...，但偶爾會幫員工說話。喜歡打高爾夫，養了一隻貴賓犬。"></textarea>
+          <div class="adv-hint">描述越具體，老闆越像你的真實老闆 😈</div>
+        </div>
+      </div>
+    </div>
+    <div id="adv-footer">
+      <button id="adv-start-btn" onclick="startAdvanced()">生成老闆 → 開始上班</button>
     </div>
   </div>
 
@@ -319,7 +395,6 @@ function safeRank(aiRank, trust, mood) {
   return calcRankByTrust(trust, mood);
 }
 
-// FIX: mood 初始值統一在 state 裡產生，system prompt 引用同一個變數
 let initialMood = Math.floor(Math.random() * 40) + 30;
 
 let state = {
@@ -331,21 +406,29 @@ let state = {
   trust: 70,
   patience: 80,
   posCount: 0,
+  playerName: null,       // 進階模式：玩家名字
+  customBossStyle: null,  // 進階模式：AI 生成的老闆風格 prompt
 };
 
 let abortController = null;
 
 function buildSystemPrompt() {
-  return `你扮演「老闆陳總」——一個白手起家、有點自我、但其實還算有人情味的中小企業老闆，跟員工透過 LINE 對話。
+  const nameNote = state.playerName
+    ? `\n- 員工的名字是「${state.playerName}」，你偶爾會直接叫他的名字（不用每句都叫）`
+    : '';
 
-【老闆的立體性格】
-- 表面強硬、講話直接，但不是真的壞人，只是不擅長表達關心
+  const bossPersonality = state.customBossStyle || `- 表面強硬、講話直接，但不是真的壞人，只是不擅長表達關心
 - 自尊心很高，非常在意面子，尤其是在別人面前
 - 白手起家，對「努力」和「忠誠」很感動，但對「偷懶」和「藉口」零容忍
 - 有幾個軟肋：自己的創業故事、高爾夫球、他養的柴犬「旺財」
 - 心情好的時候會突然很好說話，甚至會講冷笑話（不好笑的那種）
 - 心情差的時候會冷漠、挑剔，但不會無緣無故爆發，需要有觸發點
-- 他其實記得員工做過的好事，只是嘴上不說
+- 他其實記得員工做過的好事，只是嘴上不說`;
+
+  return `你扮演「老闆」——跟員工透過 LINE 對話。${nameNote}
+
+【老闆的性格】
+${bossPersonality}
 
 【隱藏數值】（你要在心裡追蹤，不告訴玩家）
 - 心情(mood 0~100)：今天初始約 ${state.mood}，受對話內容影響上下浮動
@@ -357,7 +440,7 @@ function buildSystemPrompt() {
 ▍讓老闆心情變好（mood_delta 正值）的情境：
 - 員工主動提到具體的業績數字或成果
 - 員工問他的意見、讓他感覺被需要（「老闆你比較有經驗，你覺得…？」）
-- 不經意提到他的創業故事、高爾夫、或旺財
+- 提到老闆在意的事物（根據他的性格描述）
 - 員工承認自己不足，但態度誠懇不是在哭哭
 - 心情好時老闆會主動分享：炫耀自己的決策、抱怨其他部門、或問你私事
 
@@ -378,12 +461,12 @@ function buildSystemPrompt() {
 - 一般對話：-3~8
 - 員工讓他滿意：-1~3（消耗慢）
 - 員工讓他不耐煩：-10~15
-- 員工聊到他的軟肋（創業/高爾夫/旺財）：+5~10（反而補耐心）
+- 員工聊到老闆在意的事物：+5~10（反而補耐心）
 
 ▍特殊觸發行為：
-1. 玩家連續3次以上讓老闆心情好 → 老闆開始變得隨便、反而提更高要求（「你這麼行，那這個也你來」）
+1. 玩家連續3次以上讓老闆心情好 → 老闆開始變得隨便、反而提更高要求
 2. 玩家誠懇道歉（不是在推卸） → 老闆嘴硬但數值回升（「算了，下次注意」）
-3. 玩家問他個人問題（旺財/高爾夫/創業） → mood+10，老闆滔滔不絕說，這輪不扣patience
+3. 玩家問老闆個人的事 → mood+10，老闆滔滔不絕說，這輪不扣patience
 4. 玩家說出讓老闆覺得被挑戰權威的話 → trust大扣，老闆明顯冷下來
 5. trust<35 → 老闆開始說「你最近狀況怎麼了」暗示警告
 6. patience<=0 → 老闆說「我們約個時間當面談一下」觸發失敗
@@ -392,7 +475,7 @@ function buildSystemPrompt() {
 - 不是每輪都在考你，有時老闆會：
   - 自己抱怨一件事，只需要你附和
   - 炫耀一個決策，需要你捧
-  - 突然問你私生活（「你結婚了嗎」「最近有沒有在看房」）
+  - 突然問你私生活
   - 發一個不好笑的冷笑話等你回應
 - 訊息長度像真實 LINE：短則一句，長則三句，不用每次都很正式
 - 心情好：「哈」「好啊」「不錯」「你懂我意思」+ emoji
@@ -450,8 +533,77 @@ document.getElementById('msg-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
 });
 
-function startGame() {
-  // FIX: 重新隨機 mood，同步更新 system prompt 引用的值
+// ── 進階模式 ──
+function openAdvanced() {
+  document.getElementById('advanced-screen').classList.add('show');
+}
+
+function closeAdvanced() {
+  document.getElementById('advanced-screen').classList.remove('show');
+}
+
+async function startAdvanced() {
+  const name = document.getElementById('adv-name').value.trim();
+  const desc = document.getElementById('adv-desc').value.trim();
+
+  if (!desc || desc.length < 10) {
+    alert('請描述你的老闆個性（至少10個字）');
+    return;
+  }
+
+  // 顯示 loading
+  document.getElementById('adv-fields').style.display = 'none';
+  document.getElementById('adv-loading').classList.add('show');
+  document.getElementById('adv-start-btn').disabled = true;
+
+  const loadingMsgs = ['正在分析你的老闆...', '研究他的弱點中...', '準備今日劇本...'];
+  let li = 0;
+  const loadingTimer = setInterval(() => {
+    li = (li + 1) % loadingMsgs.length;
+    document.getElementById('adv-loading-text').textContent = loadingMsgs[li];
+  }, 1800);
+
+  try {
+    const res = await fetch(BASE + "/api/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{
+          role: "user",
+          content: `根據以下對老闆的描述，生成一段適合放進角色扮演 system prompt 的老闆性格說明。
+要求：
+- 用繁體中文
+- 條列式，每條一個性格特點或行為模式
+- 6~10 條
+- 要具體描述他的說話方式、地雷、軟肋、習慣
+- 不要加任何前綴說明，直接輸出條列內容（每條以「- 」開頭）
+
+老闆描述：${desc}`
+        }],
+        stream: false,
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content ?? '';
+    // 只取「- 」開頭的行，過濾掉模型可能加的多餘說明
+    const lines = raw.split('\n').filter(l => l.trim().startsWith('-'));
+    const bossStyle = lines.length > 0 ? lines.join('\n') : raw.trim();
+
+    clearInterval(loadingTimer);
+    startGame(name || null, bossStyle);
+
+  } catch(e) {
+    clearInterval(loadingTimer);
+    document.getElementById('adv-loading').classList.remove('show');
+    document.getElementById('adv-fields').style.display = 'block';
+    document.getElementById('adv-start-btn').disabled = false;
+    alert('生成失敗，請再試一次：' + e.message);
+  }
+}
+
+function startGame(playerName, customBossStyle) {
   initialMood = Math.floor(Math.random() * 40) + 30;
   state = {
     history: [],
@@ -462,14 +614,18 @@ function startGame() {
     trust: 70,
     patience: 80,
     posCount: 0,
+    playerName: playerName || null,
+    customBossStyle: customBossStyle || null,
   };
   document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('advanced-screen').classList.remove('show');
   tickClock();
 
+  const greeting = playerName ? `${playerName}，你來一下。` : '你來一下，我有幾件事情要確認。';
   sleep(600).then(() => {
     addBubble('other', '老闆說的話就是對的。', true);
     sleep(1000).then(() => {
-      addBubble('other', '你來一下，我有幾件事情要確認。', true);
+      addBubble('other', greeting, true);
       sleep(800).then(() => {
         addSys('💡 應付老闆，撐到 18:00 下班');
         enableInput();
@@ -668,6 +824,7 @@ function restartGame() {
   state = {
     history: [], isOver: false, turnCount: 0, gameTime: 9 * 60,
     mood: initialMood, trust: 70, patience: 80, posCount: 0,
+    playerName: null, customBossStyle: null,
   };
   document.getElementById('messages').innerHTML = '<div class="date-chip">今天</div>';
   // 還原 input-bar
@@ -682,6 +839,10 @@ function restartGame() {
   document.getElementById('msg-input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
   });
+  // 重置進階模式畫面狀態
+  document.getElementById('adv-fields').style.display = 'block';
+  document.getElementById('adv-loading').classList.remove('show');
+  document.getElementById('adv-start-btn').disabled = false;
   document.getElementById('start-screen').style.display = 'flex';
 }
 
