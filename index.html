@@ -376,28 +376,69 @@ body {
 const BASE = "https://spring-art-db47.twlin628.workers.dev";
 const MODEL = "gemma4:e4b"; // 固定模型
 
-// FIX: RANKS 白名單，所有可能值統一在此定義
-const RANKS = {
-  '實習生': { emoji: '😰', color: '#888888' },
-  '工程師': { emoji: '😌', color: '#3498db' },
-  '資深':   { emoji: '😎', color: '#27ae60' },
-  '主管':   { emoji: '🤩', color: '#e67e22' },
-  '傳說':   { emoji: '👑', color: '#f39c12' },
-};
+// 10 等級定義
+const LEVELS = [
+  { level: 1,  name: '災難',  title: '人形負資產',  color: '#c0392b', emoji: '💀', minTrust: 0,  maxTrust: 15,  outcome: 'fired'   },
+  { level: 2,  name: '邊緣',  title: '薪水小偷',    color: '#e74c3c', emoji: '😵', minTrust: 15, maxTrust: 30,  outcome: 'fired'   },
+  { level: 3,  name: '掙扎',  title: '辦公室幽靈',  color: '#e67e22', emoji: '👻', minTrust: 31, maxTrust: 40,  outcome: 'any'     },
+  { level: 4,  name: '及格',  title: '混日子專家',  color: '#f39c12', emoji: '😑', minTrust: 41, maxTrust: 50,  outcome: 'halffail'},
+  { level: 5,  name: '普通',  title: '社畜本體',    color: '#95a5a6', emoji: '😶', minTrust: 51, maxTrust: 55,  outcome: 'any'     },
+  { level: 6,  name: '穩定',  title: '職場老油條',  color: '#27ae60', emoji: '😌', minTrust: 56, maxTrust: 65,  outcome: 'win'     },
+  { level: 7,  name: '優良',  title: '話術師',      color: '#2980b9', emoji: '😎', minTrust: 66, maxTrust: 75,  outcome: 'win'     },
+  { level: 8,  name: '精英',  title: '老闆的影子',  color: '#8e44ad', emoji: '🤩', minTrust: 76, maxTrust: 85,  outcome: 'win'     },
+  { level: 9,  name: '傳說',  title: '職場天花板',  color: '#d35400', emoji: '👑', minTrust: 86, maxTrust: 95,  outcome: 'win'     },
+  { level: 10, name: '神話',  title: '老闆他爹',    color: '#f1c40f', emoji: '🌟', minTrust: 96, maxTrust: 100, outcome: 'win'     },
+];
 
-// FIX: 根據 trust 數值計算段位，不依賴 AI 回傳的 rank 字串
-function calcRankByTrust(trust, mood) {
-  if (trust > 85 && mood > 70) return '傳說';
-  if (trust > 70) return '主管';
-  if (trust > 55) return '資深';
-  if (trust > 40) return '工程師';
-  return '實習生';
+function calcLevel(trust, mood, outcomeType) {
+  // outcomeType: 'fired' | 'halffail' | 'win'
+  // 被炒強制 1~3，半失敗強制 3~5
+  let candidates = LEVELS.filter(l => trust >= l.minTrust && trust <= l.maxTrust);
+  if (!candidates.length) candidates = [LEVELS[0]];
+  let lv = candidates[candidates.length - 1];
+
+  if (outcomeType === 'fired' && lv.level > 3)   lv = LEVELS[1];
+  if (outcomeType === 'halffail' && lv.level > 5) lv = LEVELS[4];
+  if (outcomeType === 'win' && lv.level < 5)      lv = LEVELS[4];
+  // 等級 10 需要 mood > 85
+  if (lv.level === 10 && mood <= 85) lv = LEVELS[8];
+
+  return lv;
 }
 
-// FIX: 驗證 AI 回傳的 rank 是否合法，不合法就用數值計算
-function safeRank(aiRank, trust, mood) {
-  if (aiRank && RANKS[aiRank]) return aiRank;
-  return calcRankByTrust(trust, mood);
+async function generateComment(lv, outcomeType) {
+  const outcomeLabel = outcomeType === 'fired' ? '被老闆開除' : outcomeType === 'halffail' ? '撐到下班但老闆不滿意' : '成功撐到下班';
+  const prompt = `你是一個毒舌但幽默的職場評審，請根據以下數據給這個員工一句個人化評語。
+
+員工最終數值：trust=${state.trust} mood=${state.mood} patience=${state.patience}
+結局：${outcomeLabel}
+回合數：${state.turnCount}
+等級：${lv.level} ${lv.name}「${lv.title}」
+
+要求：
+- 繁體中文
+- 20字以內
+- 一句話，不要標點符號以外的格式
+- ${outcomeType === 'fired' ? '語氣要損、諷刺' : outcomeType === 'halffail' ? '語氣中性偏損' : '語氣可以帶點褒獎但不失幽默'}
+- 只輸出評語本身，不要加任何前綴或說明`;
+
+  try {
+    const res = await fetch(BASE + "/api/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        stream: false,
+      })
+    });
+    const data = await res.json();
+    const raw = (data.choices?.[0]?.message?.content ?? '').trim();
+    // 清理多餘格式，取第一行
+    return raw.split('\n')[0].replace(/^["「『]|["」』]$/g, '').trim().slice(0, 30);
+  } catch {
+    return null;
+  }
 }
 
 let initialMood = Math.floor(Math.random() * 40) + 30;
@@ -726,9 +767,7 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
       let msg = p.gameover_msg;
       if (!msg && state.trust <= 0)    msg = '老闆對你徹底失去信任，叫你去HR辦公室辦手續。';
       if (!msg && state.patience <= 0) msg = '老闆的耐心耗盡，直接叫你去他辦公室「認真談談去留問題」。';
-      // FIX: 失敗時段位由數值計算，不依賴 AI
-      const rank = safeRank(p.rank, state.trust, state.mood);
-      showGameover(false, msg, rank);
+      showGameover('fired', msg);
       return;
     }
 
@@ -736,13 +775,9 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
     if (p.win || state.gameTime >= 18 * 60) {
       await sleep(1000);
       if (state.trust > 30 && state.patience > 20) {
-        // FIX: 勝利段位也由數值計算，確保準確
-        const rank = safeRank(p.rank, state.trust, state.mood);
-        showGameover(true, p.win_msg || '你成功撐過了一整天，老闆對你還算滿意。', rank);
+        showGameover('win', p.win_msg || '你成功撐過了一整天，老闆對你還算滿意。');
       } else {
-        // FIX: 半失敗結局強制用數值算段位
-        const rank = calcRankByTrust(state.trust, state.mood);
-        showGameover(false, `下班了，但老闆臨走前留下一句「明天找你談」，你心頭一沉...`, rank);
+        showGameover('halffail', `下班了，但老闆臨走前留下一句「明天找你談」，你心頭一沉...`);
       }
       return;
     }
@@ -822,26 +857,36 @@ function addTyping() {
 
 function removeEl(el) { if (el?.parentNode) el.parentNode.removeChild(el); }
 
-function showGameover(isWin, msg, rank) {
+async function showGameover(outcomeType, msg) {
   state.isOver = true;
-  const safeR = RANKS[rank] || RANKS['實習生'];
-  const safeRankName = RANKS[rank] ? rank : '實習生';
+  const lv = calcLevel(state.trust, state.mood, outcomeType);
+  const isWin = outcomeType === 'win';
 
-  // 在對話裡插入段位結果
   const msgs = document.getElementById('messages');
+
   const result = document.createElement('div');
   result.className = 'sys-msg';
-  result.style.cssText = 'font-size:13px;font-weight:600;padding:8px 16px;margin:10px 0;';
+  result.style.cssText = `font-size:13px;font-weight:600;padding:10px 16px;margin:10px 0;line-height:1.8;text-align:center;`;
   result.style.color = isWin ? '#06C755' : '#e74c3c';
   result.style.background = isWin ? '#e8faf0' : '#ffeaea';
   result.style.border = `1px solid ${isWin ? '#b2dfcc' : '#f5c6cb'}`;
-  result.textContent = `${isWin ? '🎉 成功下班' : '💀 遊戲結束'} ｜ 段位：${safeRankName} ${safeR.emoji}`;
+  result.innerHTML =
+    `${isWin ? '🎉 成功下班' : '💀 遊戲結束'}<br>` +
+    `<span style="font-size:12px;font-weight:400;color:#555;">` +
+    `等級 ${lv.level} ｜ <span style="color:${lv.color};font-weight:700;">${lv.emoji} ${lv.name}「${lv.title}」</span>` +
+    `</span><br>` +
+    `<span id="go-comment" style="font-size:12px;font-weight:400;color:#888;">評定中...</span>`;
   msgs.appendChild(result);
   msgs.scrollTop = msgs.scrollHeight;
 
-  // 把 input-bar 換成重新開始按鈕
   document.getElementById('input-bar').innerHTML =
     `<button id="restart-btn" onclick="restartGame()">🔄 再來一局</button>`;
+
+  // 非同步補上 AI 評語
+  const comment = await generateComment(lv, outcomeType);
+  const el = document.getElementById('go-comment');
+  if (el) el.textContent = comment ? `「${comment}」` : '';
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 function restartGame() {
