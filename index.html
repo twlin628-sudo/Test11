@@ -764,6 +764,18 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
 }
 
 // ── UI ──
+function getBossAvatar() {
+  const img = document.querySelector('.boss-avatar img');
+  if (img) {
+    return `<div class="msg-av" style="background:none;overflow:hidden;"><img src="${img.src}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"></div>`;
+  }
+  return `<div class="msg-av">👑</div>`;
+}
+
+function getBossName() {
+  return state.bossName || '老闆';
+}
+
 function addBubble(side, text, showTime) {
   const msgs = document.getElementById('messages');
   const row = document.createElement('div');
@@ -772,9 +784,9 @@ function addBubble(side, text, showTime) {
 
   if (side === 'other') {
     row.innerHTML = `
-      <div class="msg-av">👑</div>
+      ${getBossAvatar()}
       <div class="msg-wrap">
-        <div class="sender-name">老闆</div>
+        <div class="sender-name">${esc(getBossName())}</div>
         <div class="bubble">${esc(text)}</div>
         ${showTime ? `<div class="msg-meta"><span>${t}</span></div>` : ''}
       </div>`;
@@ -800,7 +812,7 @@ function addTyping() {
   const row = document.createElement('div');
   row.className = 'typing-row';
   row.innerHTML = `
-    <div class="msg-av">👑</div>
+    ${getBossAvatar()}
     <div class="typing-bubble">
       <div class="dot"></div><div class="dot"></div><div class="dot"></div>
     </div>`;
