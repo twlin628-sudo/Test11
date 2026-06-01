@@ -278,7 +278,7 @@ body {
         <div class="cav" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">👑</div>
         <div class="cinfo">
           <div class="cname">老闆</div>
-          <div class="cpreview">你來一下，我有事情要跟你說</div>
+          <div class="cpreview">你現在有空嗎，我有事要跟你說</div>
         </div>
         <div class="cmeta">
           <div class="ctime">09:01</div>
@@ -329,6 +329,11 @@ body {
           <input type="text" id="adv-name" placeholder="例：小明" maxlength="10" />
         </div>
         <div class="adv-field">
+          <label>老闆的稱呼</label>
+          <input type="text" id="adv-boss-name" placeholder="例：王總、陳老闆、James" maxlength="10" />
+          <div class="adv-hint">遊戲中老闆傳訊息時會用這個名字</div>
+        </div>
+        <div class="adv-field">
           <label>描述你的老闆個性</label>
           <textarea id="adv-desc" placeholder="例：很愛面子、講話直接衝、動不動就說當年我創業的時候...，但偶爾會幫員工說話。喜歡打高爾夫，養了一隻貴賓犬。"></textarea>
           <div class="adv-hint">描述越具體，老闆越像你的真實老闆 😈</div>
@@ -344,9 +349,9 @@ body {
 
   <div id="chat-header">
     <div class="back">‹</div>
-    <div class="boss-avatar">👑<div class="online"></div></div>
+    <div class="boss-avatar"><img src="data:image/png;base64,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" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"><div class="online"></div></div>
     <div class="header-info">
-      <div class="header-name">老闆</div>
+      <div class="header-name" id="header-name">老闆</div>
       <div class="header-status" id="header-status">線上</div>
     </div>
     <div class="header-actions"><span id="real-clock" style="font-size:13px;font-weight:700;color:#444;">09:00</span><span>📞</span><span>⋯</span></div>
@@ -406,13 +411,18 @@ let state = {
   trust: 70,
   patience: 80,
   posCount: 0,
-  playerName: null,       // 進階模式：玩家名字
-  customBossStyle: null,  // 進階模式：AI 生成的老闆風格 prompt
+  playerName: null,
+  bossName: null,
+  customBossStyle: null,
 };
 
 let abortController = null;
 
 function buildSystemPrompt() {
+  const bossNameNote = state.bossName
+    ? `你的名字是「${state.bossName}」，員工可能會這樣稱呼你。`
+    : '你的名字是「老闆」。';
+
   const nameNote = state.playerName
     ? `\n- 員工的名字是「${state.playerName}」，你偶爾會直接叫他的名字（不用每句都叫）`
     : '';
@@ -425,7 +435,7 @@ function buildSystemPrompt() {
 - 心情差的時候會冷漠、挑剔，但不會無緣無故爆發，需要有觸發點
 - 他其實記得員工做過的好事，只是嘴上不說`;
 
-  return `你扮演「老闆」——跟員工透過 LINE 對話。${nameNote}
+  return `你扮演「老闆」——跟員工透過 LINE 對話。${bossNameNote}${nameNote}
 
 【老闆的性格】
 ${bossPersonality}
@@ -544,6 +554,7 @@ function closeAdvanced() {
 
 async function startAdvanced() {
   const name = document.getElementById('adv-name').value.trim();
+  const bossName = document.getElementById('adv-boss-name').value.trim();
   const desc = document.getElementById('adv-desc').value.trim();
 
   if (!desc || desc.length < 10) {
@@ -592,7 +603,7 @@ async function startAdvanced() {
     const bossStyle = lines.length > 0 ? lines.join('\n') : raw.trim();
 
     clearInterval(loadingTimer);
-    startGame(name || null, bossStyle);
+    startGame(name || null, bossStyle, bossName || null);
 
   } catch(e) {
     clearInterval(loadingTimer);
@@ -603,7 +614,7 @@ async function startAdvanced() {
   }
 }
 
-function startGame(playerName, customBossStyle) {
+function startGame(playerName, customBossStyle, bossName) {
   initialMood = Math.floor(Math.random() * 40) + 30;
   state = {
     history: [],
@@ -615,17 +626,19 @@ function startGame(playerName, customBossStyle) {
     patience: 80,
     posCount: 0,
     playerName: playerName || null,
+    bossName: bossName || null,
     customBossStyle: customBossStyle || null,
   };
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('advanced-screen').classList.remove('show');
+  document.getElementById('header-name').textContent = bossName || '老闆';
   tickClock();
 
-  const greeting = playerName ? `${playerName}，你來一下。` : '你來一下，我有幾件事情要確認。';
+  const firstMsg = playerName ? `${playerName}，你現在有空嗎` : '你現在有空嗎';
   sleep(600).then(() => {
-    addBubble('other', '老闆說的話就是對的。', true);
+    addBubble('other', firstMsg, true);
     sleep(1000).then(() => {
-      addBubble('other', greeting, true);
+      addBubble('other', '我有事要跟你說', true);
       sleep(800).then(() => {
         addSys('💡 應付老闆，撐到 18:00 下班');
         enableInput();
@@ -824,7 +837,7 @@ function restartGame() {
   state = {
     history: [], isOver: false, turnCount: 0, gameTime: 9 * 60,
     mood: initialMood, trust: 70, patience: 80, posCount: 0,
-    playerName: null, customBossStyle: null,
+    playerName: null, bossName: null, customBossStyle: null,
   };
   document.getElementById('messages').innerHTML = '<div class="date-chip">今天</div>';
   // 還原 input-bar
@@ -843,6 +856,7 @@ function restartGame() {
   document.getElementById('adv-fields').style.display = 'block';
   document.getElementById('adv-loading').classList.remove('show');
   document.getElementById('adv-start-btn').disabled = false;
+  document.getElementById('header-name').textContent = '老闆';
   document.getElementById('start-screen').style.display = 'flex';
 }
 
