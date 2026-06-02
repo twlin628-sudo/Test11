@@ -533,6 +533,11 @@ ${bossPersonality}
 - 心情差：只回一兩個字，或語氣明顯冷掉（「喔」「這樣啊」「再想想」）
 - 偶爾用「…」表示沉默或不滿
 
+【對話脈絡】
+- 你和員工的對話是連續進行的，請根據對話歷史理解當前情境
+- 回應要符合對話邏輯的自然推進，不要重複問過的問題或說過的話
+- 記得員工說過的承諾、立場、或透露的資訊，適時引用或追蹤
+
 【格式鐵則——違反即錯誤】
 - message 欄位只能放老闆傳的 LINE 訊息原文，不能有任何其他東西
 - 絕對禁止在 message 裡加括號說明，例如（心情不好）（語氣冷淡）（皺眉）之類的都不行
@@ -748,7 +753,7 @@ mood:${state.mood} trust:${state.trust} patience:${state.patience}
       state.history.pop(); enableInput(); return;
     }
 
-    state.history.push({ role: "assistant", content: raw });
+    state.history.push({ role: "assistant", content: p.message || '' });
     state.turnCount++;
 
     state.mood     = clamp(state.mood     + (p.mood_delta     || 0));
