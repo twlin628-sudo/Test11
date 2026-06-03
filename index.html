@@ -197,7 +197,7 @@ body {
   display: flex; align-items: center; gap: 6px;
 }
 #model-info strong { color: #1a1a1a; }
-#enter-btn {
+#enter-btn, .enter-btn {
   background: var(--green); border: none; color: white;
   font-family: inherit; font-size: 14px; font-weight: 600;
   padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap;
@@ -242,10 +242,12 @@ body {
 
 /* 生成中 loading */
 #adv-loading {
-  display: none; flex-direction: column; align-items: center; justify-content: center;
+  display: none;
+}
+#adv-loading.show {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 14px; padding: 40px 16px; text-align: center;
 }
-#adv-loading.show { display: flex; }
 #adv-loading .adv-body-wrap { display: flex; flex-direction: column; gap: 20px; }
 #adv-loading.show ~ .adv-body-wrap { display: none; }
 .loading-dots { display: flex; gap: 6px; }
@@ -270,11 +272,11 @@ body {
     <!-- 模式選擇 -->
     <div id="setup-bar">
       <div id="model-info">🤖 模型：<strong>gemma4:e4b</strong></div>
-      <button id="enter-btn" onclick="openAdvanced()" style="background:#f0f0f0;color:#333;margin-right:6px;">進階模式</button>
-      <button id="enter-btn" onclick="startGame(null, null)">上班去</button>
+      <button class="enter-btn" onclick="openAdvanced()" style="background:#f0f0f0;color:#333;margin-right:6px;">進階模式</button>
+      <button class="enter-btn" onclick="startGame(null, null, null, null)">上班去</button>
     </div>
     <div class="chat-list">
-      <div class="chat-item" onclick="startGame()">
+      <div class="chat-item" onclick="startGame(null, null, null, null)">
         <div class="cav" style="background:linear-gradient(135deg,#1a1a2e,#16213e)">👑</div>
         <div class="cinfo">
           <div class="cname">老闆</div>
@@ -363,7 +365,7 @@ body {
   </div>
 
   <!-- FIX: 固定顯示使用中的模型 -->
-  <div id="model-badge">🤖 目前模型：<span>gemma4:e4b</span></div>
+  <div id="model-badge">🤖 目前模型：<span>gemma4:e4b</span>&nbsp;&nbsp;|&nbsp;&nbsp;v3.0</div>
 
   <div id="messages">
     <!-- FIX: 統一使用 date-chip -->
@@ -383,7 +385,7 @@ const MODEL = "gemma4:e4b"; // 固定模型
 
 // 10 等級定義
 const LEVELS = [
-  { level: 1,  name: '災難',  title: '人形負資產',  color: '#c0392b', emoji: '💀', minTrust: 0,  maxTrust: 15,  outcome: 'fired'   },
+  { level: 1,  name: '災難',  title: '人形負資產',  color: '#c0392b', emoji: '💀', minTrust: 0,  maxTrust: 14,  outcome: 'fired'   },
   { level: 2,  name: '邊緣',  title: '薪水小偷',    color: '#e74c3c', emoji: '😵', minTrust: 15, maxTrust: 30,  outcome: 'fired'   },
   { level: 3,  name: '掙扎',  title: '辦公室幽靈',  color: '#e67e22', emoji: '👻', minTrust: 31, maxTrust: 40,  outcome: 'any'     },
   { level: 4,  name: '及格',  title: '混日子專家',  color: '#f39c12', emoji: '😑', minTrust: 41, maxTrust: 50,  outcome: 'halffail'},
@@ -640,7 +642,7 @@ function sanitizeBossMessage(message) {
     .replace(/```[\s\S]*?```/g, '')
     .replace(/[\r\n]+/g, ' ')
     .trim()
-    .slice(0, 120);
+    .slice(0, 300);
 }
 
 function normalizeBossResponse(p) {
